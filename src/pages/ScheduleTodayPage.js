@@ -1,12 +1,18 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AttendanceGrid from "../components/AttendanceGrid";
 import ScheduleGrid from "../components/ScheduleGrid";
-import { teachers, students, allocations } from "../data";
+import { teachers, allocations } from "../data";
 
 const ScheduleTodayPage = () => {
     const [teachersData, setTeachersData] = useState(teachers); // Store teacher attendance status
-
+    const [techerAllocations, setAllocations] = useState(allocations);
+    useEffect(() => {
+        let newAllocations = techerAllocations.map((item) => {
+            return getAssignedTeacher(item);
+        });
+        setAllocations(newAllocations);
+    }, [teachersData])
     const handleAttendanceChange = (teacher, status) => {
         // Update teacher attendance status
         let tempteachersdata = JSON.parse(JSON.stringify(teachersData));
@@ -21,9 +27,41 @@ const ScheduleTodayPage = () => {
                 return item;
             }
         });
-        setTeachersData(tempteachersdata)
-    };
+        setTeachersData(tempteachersdata);
 
+    };
+    const getAssignedTeacher = (student) => {
+        let assignedTeacher = "";
+        let currentTeacherHierarchy = 4;
+        if (student.teacher) {
+            //check if teacher is Present or Not
+            let teacher = teachersData?.filter((item) => {
+                currentTeacherHierarchy = item.hierarchy;
+                return item.name === student.teacher && item.attendance === 'Present';
+            });
+            if (teacher.length)
+                assignedTeacher = teacher[0].name;
+        }
+        if (!assignedTeacher) {
+            // If no teacher is allocated, find the teacher higher up in hierarchy
+            let availableTeachers = teachersData?.filter((item) => {
+                return item.attendance === 'Present' && item.subjects?.includes(student.subject)
+            });
+            let sortedTeachers = availableTeachers.length && availableTeachers.sort((a, b) => b.hierarchy - a.hierarchy);
+
+            let sortedTeachersWithHeighrHierarchy = sortedTeachers.filter((item) => {
+                return item.hierarchy < currentTeacherHierarchy;
+            })
+            if (sortedTeachersWithHeighrHierarchy.length) {
+                assignedTeacher = sortedTeachersWithHeighrHierarchy[0].name;
+            }
+        }
+
+        return {
+            ...student,
+            teacher: assignedTeacher ? assignedTeacher : "Not Assigned"
+        };
+    };
     return (
         <>
             <div className="pageheader">Schedule Today</div>
@@ -41,7 +79,7 @@ const ScheduleTodayPage = () => {
                 {/* Current Schedule Section */}
                 <div className="schedule-section">
                     <h2>Current Schedule</h2>
-                    <ScheduleGrid students={students} allocations={allocations} teachers={teachersData} />
+                    <ScheduleGrid allocations={techerAllocations} />
                 </div>
             </div>
         </>
