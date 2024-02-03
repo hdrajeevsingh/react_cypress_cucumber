@@ -6,7 +6,7 @@ module.exports = defineConfig({
       framework: "create-react-app",
       bundler: "webpack",
     },
-    specPattern: "**/*.feature",
+    specPattern: "**/*.cy.js",
   },
 
   e2e: {
