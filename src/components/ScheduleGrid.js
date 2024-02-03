@@ -1,5 +1,5 @@
 import React from "react";
-const ScheduleGrid = ({ allocations }) => {
+const ScheduleGrid = ({ allocations, getAssignedTeacher }) => {
     return (
         <table id="currentScheduleTable">
             {/* Schedule table headers */}
@@ -16,7 +16,7 @@ const ScheduleGrid = ({ allocations }) => {
                     <tr data-test-id={item.student} key={item.student}>
                         <td>{item.student}</td>
                         <td>{item.subject}</td>
-                        <td>{item.teacher}</td>
+                        <td>{item.currentAssignTeacher}</td>
                     </tr>
                 ))}
             </tbody>

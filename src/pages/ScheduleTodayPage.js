@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import AttendanceGrid from "../components/AttendanceGrid";
 import ScheduleGrid from "../components/ScheduleGrid";
@@ -8,16 +7,42 @@ const ScheduleTodayPage = () => {
     const [teachersData, setTeachersData] = useState(teachers); // Store teacher attendance status
     const [techerAllocations, setAllocations] = useState(allocations);
     useEffect(() => {
+        let tempTeachers = JSON.parse(JSON.stringify(teachers));
+        let sortedTeachersByHierarchy = tempTeachers.sort((a, b) => b.hierarchy - a.hierarchy);//sort all teachers based on hierarchy
         let newAllocations = techerAllocations.map((item) => {
-            return getAssignedTeacher(item);
+            {/* get teachers list for subject and current assigned teacher for each student */ }
+            let allocatedTeachers = updateTeacherList(item, sortedTeachersByHierarchy);
+            return {
+                ...item,
+                teachers: allocatedTeachers?.['assignedTeachers'],
+                currentAssignTeacher: allocatedTeachers?.['currentAssignTeacher']
+            }
         });
         setAllocations(newAllocations);
-    }, [teachersData])
+        setTeachersData(teachers);
+    }, []);
+    const updateTeacherList = (student, sortedTeachersByHierarchy) => {
+        let assignedTeachers = student.teachers || [];
+        let lowestTeacherHierarchy = 4;
+        let newAssignedTeachers = sortedTeachersByHierarchy.filter(teacher => {
+            return teacher.hierarchy < lowestTeacherHierarchy && teacher.subjects?.includes(student.subject)
+        });
+        newAssignedTeachers.forEach(teacher => {
+            if (!assignedTeachers.includes(teacher.name)) {
+                assignedTeachers.push(teacher.name);
+            }
+        })
+        return {
+            assignedTeachers: assignedTeachers,
+            currentAssignTeacher: getAssignedTeacher(assignedTeachers, teachers)
+        }
+    }
+
     const handleAttendanceChange = (teacher, status) => {
         // Update teacher attendance status
         let tempteachersdata = JSON.parse(JSON.stringify(teachersData));
-        tempteachersdata = tempteachersdata.map((item) => {
-            if (item.id === teacher.id) {
+        tempteachersdata = tempteachersdata?.map((item) => {
+            if (item?.id === teacher?.id) {
                 return {
                     ...item,
                     attendance: status
@@ -28,39 +53,28 @@ const ScheduleTodayPage = () => {
             }
         });
         setTeachersData(tempteachersdata);
+        {/* update current Assigned teacher for each student if teacher ayttendance changed */ }
+        let newAllocations = techerAllocations.map((item) => {
 
-    };
-    const getAssignedTeacher = (student) => {
-        let assignedTeacher = "";
-        let currentTeacherHierarchy = 4;
-        if (student.teacher) {
-            //check if teacher is Present or Not
-            let teacher = teachersData?.filter((item) => {
-                currentTeacherHierarchy = item.hierarchy;
-                return item.name === student.teacher && item.attendance === 'Present';
-            });
-            if (teacher.length)
-                assignedTeacher = teacher[0].name;
-        }
-        if (!assignedTeacher) {
-            // If no teacher is allocated, find the teacher higher up in hierarchy
-            let availableTeachers = teachersData?.filter((item) => {
-                return item.attendance === 'Present' && item.subjects?.includes(student.subject)
-            });
-            let sortedTeachers = availableTeachers.length && availableTeachers.sort((a, b) => b.hierarchy - a.hierarchy);
-
-            let sortedTeachersWithHeighrHierarchy = sortedTeachers.filter((item) => {
-                return item.hierarchy < currentTeacherHierarchy;
-            })
-            if (sortedTeachersWithHeighrHierarchy.length) {
-                assignedTeacher = sortedTeachersWithHeighrHierarchy[0].name;
+            return {
+                ...item,
+                currentAssignTeacher: getAssignedTeacher(item?.teachers, tempteachersdata)
             }
-        }
+        });
+        setAllocations(newAllocations);
+    };
 
-        return {
-            ...student,
-            teacher: assignedTeacher ? assignedTeacher : "Not Assigned"
-        };
+    const checkIfTeacherPresent = (name, newTeachersList) => {
+        let teacher = newTeachersList?.filter(item => {
+            return item?.name === name && item?.attendance === 'Present'
+        })
+        return teacher?.length ? true : false
+    }
+    const getAssignedTeacher = (assignedTeachers, newTeachersList) => {
+        let getPresentTeachers = assignedTeachers?.filter(item => {
+            return (checkIfTeacherPresent(item, newTeachersList));
+        });
+        return getPresentTeachers?.length ? getPresentTeachers?.[0] : 'Not Assigned'
     };
     return (
         <>
