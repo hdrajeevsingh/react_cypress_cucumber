@@ -25,7 +25,7 @@ Given('the current schedule is as follows:', (dataTable) => {
 });
 When('the teacher Rubeus Hagrid is marked as "Absent"', () => {
     // Select "Absent" for the teacher Rubeus Hagrid
-    cy.get('select').eq(2).select('Absent', { force: true });
+    cy.get('select[data-teacher="Rubeus Hagrid"').select('Absent', { force: true });
 });
 Then('Hermione Granger should be auto-assigned the teacher Minerva McGonagall', () => {
     cy.get('[data-test-id="Hermione Granger"]').children().eq(2).should('contain', 'Minerva McGonagall');
